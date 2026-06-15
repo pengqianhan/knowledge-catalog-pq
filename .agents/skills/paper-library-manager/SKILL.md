@@ -32,7 +32,7 @@ When adding or updating a paper:
 
 ## Paper Documents
 
-Use `references/schema.md` for the frontmatter and body conventions. Default body sections for papers:
+Use `references/SPEC.md` as the base OKF format reference and `references/schema.md` as the stricter paper-library profile. Default body sections for papers:
 
 * `# Summary`
 * `# Key Ideas`
