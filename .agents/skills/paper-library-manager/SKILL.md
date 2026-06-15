@@ -1,19 +1,19 @@
 ---
 name: paper-library-manager
-description: Manage this repository's local OKF paper library under `paper-library/`. Use when Codex is asked to add arXiv or research-paper URLs, update paper notes, maintain paper/topic indexes, automatically create or update topic summary pages for important new themes, normalize paper metadata, track reading status, compare papers, or check the health of the repo-local paper library. This skill is local to this repository and should not write to global Codex skill directories.
+description: Manage an OKF paper library under `paper-library/` in the current repository. Use when Codex is asked to add arXiv or research-paper URLs, update paper notes, maintain paper/topic indexes, automatically create or update topic summary pages for important new themes, normalize paper metadata, track reading status, compare papers, generate optional visualizations, or validate the paper library. Prefer repo-local use from `.agents/skills` when the paper library belongs to one repository.
 ---
 
 # Paper Library Manager
 
 ## Overview
 
-Maintain the repo-local OKF paper library as Markdown files with YAML frontmatter. Keep paper content in `paper-library/`; keep this skill limited to workflow rules, schema guidance, and validation expectations.
+Maintain an OKF paper library as Markdown files with YAML frontmatter. Keep paper content in `paper-library/`; keep this skill limited to workflow rules, schema guidance, and validation expectations.
 
 ## Scope
 
-Use `paper-library/` as the default library root unless the user names a different repo-local path. Treat every non-reserved `.md` file in that tree as an OKF concept.
+Use `paper-library/` as the default library root unless the user names a different path. Treat every non-reserved `.md` file in that tree as an OKF concept.
 
-Do not write to `~/.codex/skills`, `$CODEX_HOME/skills`, or other global skill locations for paper-library work. This skill itself lives in `.agents/skills/paper-library-manager/` so it remains repo-local.
+When used for a repository-specific library, prefer installing or copying this skill under that repository's `.agents/skills/` directory. Do not write to `~/.codex/skills`, `$CODEX_HOME/skills`, or other global skill locations unless the user explicitly asks for global installation.
 
 ## Workflow
 
@@ -82,14 +82,28 @@ Use `status: unread` for newly added papers unless the user says otherwise. Reco
 
 Before finishing paper-library edits:
 
-* Check that every paper has `type: Paper`, `title`, `description`, `resource`, `arxiv_id`, `authors`, `submitted`, `tags`, `status`, `priority`, and `timestamp`.
+* Check that every paper has `type: Paper`, `title`, `description`, `resource`, `arxiv_id`, `pdf_url`, `doi`, `authors`, `submitted`, `tags`, `status`, `priority`, and `timestamp`.
 * Check that internal Markdown links resolve within `paper-library/`.
 * Check that index entries point to existing files.
-* Run the skill validator when editing this skill's own files:
+* Run the bundled paper-library validator after content edits:
 
 ```bash
-python /Users/pengqianhan/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/paper-library-manager
+python .agents/skills/paper-library-manager/scripts/validate_paper_library.py paper-library
 ```
+
+If your environment provides a Codex skill validator, run it against this skill folder after editing the skill itself.
+
+## Visualization
+
+Generating `paper-library/viz.html` is optional and depends on an OKF-compatible viewer. Do not assume the target repository has the OKF reference viewer unless it is present.
+
+If the host repository contains the OKF reference viewer at `okf/src`, generate a graph view with:
+
+```bash
+python -c 'import sys; from pathlib import Path; sys.path.insert(0, "okf/src"); from enrichment_agent.viewer import generate_visualization; print(generate_visualization(Path("paper-library"), Path("paper-library/viz.html"), bundle_name="Paper Library"))'
+```
+
+If no OKF viewer is available, leave `viz.html` unchanged or skip visualization; the Markdown bundle remains the source of truth.
 
 ## Comparison Tasks
 

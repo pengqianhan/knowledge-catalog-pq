@@ -98,3 +98,13 @@ Default topic body:
 Use topic files to connect papers and track open questions. Do not duplicate full paper summaries in topic files. Omit `# Synthesis` until the topic has enough related papers to support a useful cross-paper observation.
 
 Create topic files proactively for important new themes when adding papers. Keep topic slugs lowercase and hyphenated, for example `agent-self-evolution.md` or `long-context-reasoning.md`.
+
+## Validation
+
+Validate a library with the bundled standard-library script:
+
+```bash
+python .agents/skills/paper-library-manager/scripts/validate_paper_library.py paper-library
+```
+
+The script checks OKF frontmatter, paper and topic required fields, expected body sections, internal links, bidirectional paper-topic links, and required index files.
