@@ -13,8 +13,6 @@ Maintain an OKF paper library as Markdown files with YAML frontmatter. Keep pape
 
 Use `paper-library/` as the default library root unless the user names a different path. Treat every non-reserved `.md` file in that tree as an OKF concept.
 
-When used for a repository-specific library, prefer installing or copying this skill under that repository's `.agents/skills/` directory. Do not write to `~/.codex/skills`, `$CODEX_HOME/skills`, or other global skill locations unless the user explicitly asks for global installation.
-
 ## Workflow
 
 When adding or updating a paper:
