@@ -1,12 +1,12 @@
 # Paper Library Schema
 
-This schema extends the repo-local OKF v0.1 snapshot in `SPEC.md`. Treat
-`SPEC.md` as the base format contract for bundle structure, concept
+This schema extends the repo-local OKF v0.1 snapshot in [SPEC.md](SPEC.md). Treat
+[SPEC.md](SPEC.md) as the base format contract for bundle structure, concept
 documents, frontmatter, links, index files, and citations. Treat this
 file as the stricter paper-library profile layered on top of OKF.
 
-If this file is silent on a format question, follow `SPEC.md`. If this
-file is stricter than `SPEC.md`, follow this file for `paper-library/`
+If this file is silent on a format question, follow [SPEC.md](SPEC.md). If this
+file is stricter than [SPEC.md](SPEC.md), follow this file for `paper-library/`
 content so Codex can maintain papers and topics consistently.
 
 ## Paper Frontmatter
