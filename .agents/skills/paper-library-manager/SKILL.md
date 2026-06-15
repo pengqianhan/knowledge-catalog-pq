@@ -1,13 +1,13 @@
 ---
 name: paper-library-manager
-description: Manage an OKF paper library under `paper-library/` in the current repository. Use when Codex is asked to add arXiv or research-paper URLs, update paper notes, maintain paper/topic indexes, automatically create or update topic summary pages for important new themes, normalize paper metadata, track reading status, compare papers, generate optional visualizations, or validate the paper library. Prefer repo-local use from `.agents/skills` when the paper library belongs to one repository.
+description: Manage an OKF paper library under `paper-library/` in the current repository. Use when Codex is asked to add arXiv or research-paper URLs, update paper notes, maintain paper/topic indexes, automatically create or update topic summary pages for important new themes, normalize paper metadata, track reading status, compare papers, generate required `viz.html` visualizations, or validate the paper library. Prefer repo-local use from `.agents/skills` when the paper library belongs to one repository.
 ---
 
 # Paper Library Manager
 
 ## Overview
 
-Maintain an OKF paper library as Markdown files with YAML frontmatter. Keep paper content in `paper-library/`; keep this skill limited to workflow rules, schema guidance, and validation expectations.
+Maintain an OKF paper library as Markdown files with YAML frontmatter. Keep paper content in `paper-library/`; keep `paper-library/viz.html` as the required generated graph; keep this skill limited to workflow rules, schema guidance, validation expectations, and standalone helper scripts.
 
 ## Scope
 
@@ -28,7 +28,8 @@ When adding or updating a paper:
 7. Add concise topic links under the paper's `# Related` section and add the paper to each affected topic's `# Papers` section.
 8. Update `paper-library/papers/index.md`, `paper-library/topics/index.md`, and every affected `paper-library/topics/*.md`.
 9. Preserve user notes, reading status, priority, and manually curated tags unless the user explicitly asks to change them.
-10. Cite only sources that were actually used.
+10. Regenerate `paper-library/viz.html` with the bundled visualization script.
+11. Cite only sources that were actually used.
 
 ## Paper Documents
 
@@ -85,6 +86,12 @@ Before finishing paper-library edits:
 * Check that every paper has `type: Paper`, `title`, `description`, `resource`, `arxiv_id`, `pdf_url`, `doi`, `authors`, `submitted`, `tags`, `status`, `priority`, and `timestamp`.
 * Check that internal Markdown links resolve within `paper-library/`.
 * Check that index entries point to existing files.
+* Regenerate the required graph artifact after content edits:
+
+```bash
+python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-library
+```
+
 * Run the bundled paper-library validator after content edits:
 
 ```bash
@@ -95,15 +102,15 @@ If your environment provides a Codex skill validator, run it against this skill 
 
 ## Visualization
 
-Generating `paper-library/viz.html` is optional and depends on an OKF-compatible viewer. Do not assume the target repository has the OKF reference viewer unless it is present.
+`paper-library/viz.html` is required. Use `viz.html` as the canonical filename; treat `vis.html` as a typo unless the user explicitly asks for a separate alias.
 
-If the host repository contains the OKF reference viewer at `okf/src`, generate a graph view with:
+Generate the graph view with the bundled dependency-free script:
 
 ```bash
-python -c 'import sys; from pathlib import Path; sys.path.insert(0, "okf/src"); from enrichment_agent.viewer import generate_visualization; print(generate_visualization(Path("paper-library"), Path("paper-library/viz.html"), bundle_name="Paper Library"))'
+python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-library
 ```
 
-If no OKF viewer is available, leave `viz.html` unchanged or skip visualization; the Markdown bundle remains the source of truth.
+The script embeds the current paper/topic graph into the HTML so it works from a static checkout or `file://` URL. If a target repository also has another OKF-compatible viewer, use it only when the user asks; the final bundle must still pass the bundled validator.
 
 ## Comparison Tasks
 

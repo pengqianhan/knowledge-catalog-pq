@@ -1,6 +1,6 @@
 # Paper Library Schema
 
-This schema extends the repo-local OKF v0.1 snapshot in [SPEC.md](SPEC.md). Treat
+This schema extends the bundled OKF v0.1 snapshot in [SPEC.md](SPEC.md). Treat
 [SPEC.md](SPEC.md) as the base format contract for bundle structure, concept
 documents, frontmatter, links, index files, and citations. Treat this
 file as the stricter paper-library profile layered on top of OKF.
@@ -99,6 +99,21 @@ Use topic files to connect papers and track open questions. Do not duplicate ful
 
 Create topic files proactively for important new themes when adding papers. Keep topic slugs lowercase and hyphenated, for example `agent-self-evolution.md` or `long-context-reasoning.md`.
 
+## Required Bundle Outputs
+
+`paper-library/viz.html` is a required generated artifact. Use `viz.html` as
+the canonical filename; do not create `vis.html` unless a user explicitly asks
+for an additional alias.
+
+Generate the visualization after paper, topic, or index edits:
+
+```bash
+python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-library
+```
+
+The generated file must embed graph data for every paper and topic concept so
+the validator can detect stale or missing visualizations.
+
 ## Validation
 
 Validate a library with the bundled standard-library script:
@@ -107,4 +122,6 @@ Validate a library with the bundled standard-library script:
 python .agents/skills/paper-library-manager/scripts/validate_paper_library.py paper-library
 ```
 
-The script checks OKF frontmatter, paper and topic required fields, expected body sections, internal links, bidirectional paper-topic links, and required index files.
+The script checks OKF frontmatter, paper and topic required fields, expected
+body sections, internal links, bidirectional paper-topic links, required index
+files, and the required `viz.html` graph artifact.

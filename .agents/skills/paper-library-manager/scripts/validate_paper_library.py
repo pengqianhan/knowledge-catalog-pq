@@ -9,6 +9,7 @@ It validates the paper-library profile layered on top of OKF v0.1.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -34,6 +35,11 @@ PAPER_REQUIRED = {
 TOPIC_REQUIRED = {"type", "title", "description", "tags", "timestamp"}
 STATUS_VALUES = {"unread", "skimmed", "read", "summarized"}
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+\.md(?:#[^)]+)?)\)")
+VIZ_DATA_RE = re.compile(
+    r"<script[^>]+id=[\"']paper-library-viz-data[\"'][^>]*>(.*?)</script>",
+    re.DOTALL,
+)
+VIZ_SCHEMA = "paper-library-viz/v1"
 
 
 @dataclass
@@ -138,6 +144,69 @@ def _link_target(root: Path, source: Path, target: str) -> Path:
     return (source.parent / target).resolve()
 
 
+def _validate_viz(root: Path, expected_concept_ids: set[str]) -> list[str]:
+    errors: list[str] = []
+    viz_path = root / "viz.html"
+    legacy_path = root / "vis.html"
+    if not viz_path.exists():
+        if legacy_path.exists():
+            errors.append("viz.html: missing required file; found vis.html, expected viz.html")
+        else:
+            errors.append("viz.html: missing required visualization file")
+        return errors
+    if not viz_path.is_file():
+        return ["viz.html: expected a file"]
+
+    text = viz_path.read_text(encoding="utf-8")
+    if not text.strip():
+        return ["viz.html: file is empty"]
+
+    match = VIZ_DATA_RE.search(text)
+    if not match:
+        return [
+            "viz.html: missing embedded paper-library graph data; run the bundled generate_viz.py script"
+        ]
+
+    try:
+        data = json.loads(match.group(1))
+    except json.JSONDecodeError as exc:
+        return [f"viz.html: invalid embedded graph JSON: {exc}"]
+
+    if data.get("schema") != VIZ_SCHEMA:
+        errors.append(f"viz.html: expected schema {VIZ_SCHEMA!r}, got {data.get('schema')!r}")
+
+    nodes = data.get("nodes")
+    if not isinstance(nodes, list):
+        errors.append("viz.html: graph data field nodes must be a list")
+        nodes = []
+    node_ids = {
+        str(node.get("id"))
+        for node in nodes
+        if isinstance(node, dict) and node.get("id")
+    }
+    missing_nodes = sorted(expected_concept_ids - node_ids)
+    extra_nodes = sorted(node_ids - expected_concept_ids)
+    if missing_nodes:
+        errors.append(f"viz.html: missing concepts: {', '.join(missing_nodes)}")
+    if extra_nodes:
+        errors.append(f"viz.html: contains unknown concepts: {', '.join(extra_nodes)}")
+
+    edges = data.get("edges")
+    if not isinstance(edges, list):
+        errors.append("viz.html: graph data field edges must be a list")
+        return errors
+    for idx, edge in enumerate(edges, start=1):
+        if not isinstance(edge, dict):
+            errors.append(f"viz.html: edge {idx} must be an object")
+            continue
+        source = edge.get("source")
+        target = edge.get("target")
+        if source not in node_ids or target not in node_ids:
+            errors.append(f"viz.html: edge {idx} references an unknown concept")
+
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
@@ -151,6 +220,7 @@ def validate(root: Path) -> list[str]:
 
     by_rel_no_suffix = {doc.rel.with_suffix("").as_posix(): doc for doc in docs}
     by_path = {doc.path.resolve(): doc for doc in docs}
+    errors.extend(_validate_viz(root, set(by_rel_no_suffix)))
 
     for doc in docs:
         fm = doc.frontmatter
