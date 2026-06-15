@@ -13,7 +13,7 @@ Maintain the repo-local OKF paper library as Markdown files with YAML frontmatte
 
 Use `paper-library/` as the default library root unless the user names a different repo-local path. Treat every non-reserved `.md` file in that tree as an OKF concept.
 
-Do not write to `~/.codex/skills`, `$CODEX_HOME/skills`, or other global skill locations for paper-library work. This skill itself lives in `skills/paper-library-manager/` so it remains repo-local.
+Do not write to `~/.codex/skills`, `$CODEX_HOME/skills`, or other global skill locations for paper-library work. This skill itself lives in `.agents/skills/paper-library-manager/` so it remains repo-local.
 
 ## Workflow
 
@@ -88,7 +88,7 @@ Before finishing paper-library edits:
 * Run the skill validator when editing this skill's own files:
 
 ```bash
-python /Users/pengqianhan/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/paper-library-manager
+python /Users/pengqianhan/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/paper-library-manager
 ```
 
 ## Comparison Tasks
