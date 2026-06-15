@@ -12,11 +12,13 @@ import argparse
 import json
 import re
 import sys
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 RESERVED_NAMES = {"index.md", "log.md"}
+CONFIG_NAME = "paper-library.toml"
 PAPER_REQUIRED = {
     "type",
     "title",
@@ -43,6 +45,11 @@ class Document:
     rel: Path
     frontmatter: dict[str, Any]
     body: str
+
+
+@dataclass
+class LibraryConfig:
+    paper_required_sections: list[str]
 
 
 def _strip_quotes(value: str) -> str:
@@ -130,6 +137,78 @@ def _missing(frontmatter: dict[str, Any], required: set[str]) -> list[str]:
 
 def _has_section(body: str, heading: str) -> bool:
     return any(line.strip() == heading for line in body.splitlines())
+
+
+def _string_list(value: Any) -> bool:
+    return isinstance(value, list) and all(
+        isinstance(item, str) and bool(item.strip()) for item in value
+    )
+
+
+def _heading(section: str) -> str:
+    section = section.strip()
+    return section if section.startswith("#") else f"# {section}"
+
+
+def _load_config(root: Path) -> tuple[LibraryConfig, list[str]]:
+    config_path = root / CONFIG_NAME
+    if not config_path.exists():
+        return LibraryConfig(paper_required_sections=[]), []
+    if not config_path.is_file():
+        return LibraryConfig(paper_required_sections=[]), [f"{CONFIG_NAME}: expected a file"]
+
+    try:
+        data = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        return LibraryConfig(paper_required_sections=[]), [f"{CONFIG_NAME}: invalid TOML: {exc}"]
+
+    errors: list[str] = []
+    paper_body = data.get("paper_body", {})
+    if not isinstance(paper_body, dict):
+        return LibraryConfig(paper_required_sections=[]), [
+            f"{CONFIG_NAME}: paper_body must be a table"
+        ]
+
+    required_sections = paper_body.get("required_sections", [])
+    if not _string_list(required_sections):
+        errors.append(f"{CONFIG_NAME}: paper_body.required_sections must be a string list")
+        required_sections = []
+
+    recommended_sections = paper_body.get("recommended_sections", [])
+    if "recommended_sections" in paper_body and not _string_list(recommended_sections):
+        errors.append(f"{CONFIG_NAME}: paper_body.recommended_sections must be a string list")
+
+    preserve_existing = paper_body.get("preserve_existing_layout", True)
+    if not isinstance(preserve_existing, bool):
+        errors.append(f"{CONFIG_NAME}: paper_body.preserve_existing_layout must be a boolean")
+
+    profiles = paper_body.get("profiles", {})
+    if "profiles" in paper_body and not isinstance(profiles, dict):
+        errors.append(f"{CONFIG_NAME}: paper_body.profiles must be a table")
+        profiles = {}
+
+    default_profile = paper_body.get("default_profile")
+    if default_profile is not None:
+        if not isinstance(default_profile, str) or not default_profile.strip():
+            errors.append(f"{CONFIG_NAME}: paper_body.default_profile must be a string")
+        elif default_profile not in profiles:
+            errors.append(
+                f"{CONFIG_NAME}: paper_body.default_profile {default_profile!r} "
+                "is not defined under paper_body.profiles"
+            )
+
+    if isinstance(profiles, dict):
+        for profile_name, profile in sorted(profiles.items()):
+            if not isinstance(profile, dict):
+                errors.append(f"{CONFIG_NAME}: profile {profile_name!r} must be a table")
+                continue
+            sections = profile.get("sections", [])
+            if not _string_list(sections):
+                errors.append(
+                    f"{CONFIG_NAME}: profile {profile_name!r} sections must be a string list"
+                )
+
+    return LibraryConfig(paper_required_sections=list(required_sections)), errors
 
 
 def _link_target(root: Path, source: Path, target: str) -> Path:
@@ -231,6 +310,8 @@ def validate(root: Path) -> list[str]:
 
     docs, load_errors = load_documents(root)
     errors.extend(load_errors)
+    config, config_errors = _load_config(root)
+    errors.extend(config_errors)
 
     by_rel_no_suffix = {doc.rel.with_suffix("").as_posix(): doc for doc in docs}
     by_path = {doc.path.resolve(): doc for doc in docs}
@@ -254,9 +335,14 @@ def validate(root: Path) -> list[str]:
                 )
             if fm.get("status") and fm.get("status") not in STATUS_VALUES:
                 errors.append(f"{doc.rel}: unexpected status {fm.get('status')!r}")
-            for section in ["# Summary", "# Key Ideas", "# Notes", "# Related", "# Citations"]:
-                if not _has_section(doc.body, section):
-                    errors.append(f"{doc.rel}: missing body section {section}")
+            if not doc.body.strip():
+                errors.append(f"{doc.rel}: paper body is empty")
+            for section in config.paper_required_sections:
+                heading = _heading(section)
+                if not _has_section(doc.body, heading):
+                    errors.append(
+                        f"{doc.rel}: missing configured paper body section {heading}"
+                    )
 
         elif doc.rel.parts and doc.rel.parts[0] == "topics":
             missing = _missing(fm, TOPIC_REQUIRED)

@@ -19,30 +19,24 @@ When adding or updating a paper:
 
 1. Parse the arXiv ID from the URL or user input.
 2. Read the existing paper file if `paper-library/papers/<arxiv_id>.md` already exists.
-3. Fetch or verify metadata from authoritative sources when network access is available. Prefer arXiv for bibliographic facts; use project pages, GitHub, Hugging Face paper pages, or Semantic Scholar only as additional sources.
-4. Create or update one paper concept under `paper-library/papers/`.
-5. Identify 1 to 3 important themes from the paper's title, abstract, method, benchmarks, and contributions.
-6. Reuse existing topic pages when they cover those themes; otherwise create new `paper-library/topics/<slug>.md` topic summary pages without waiting for an explicit user request.
-7. Add concise topic links under the paper's `# Related` section and add the paper to each affected topic's `# Papers` section.
-8. Update `paper-library/papers/index.md`, `paper-library/topics/index.md`, and every affected `paper-library/topics/*.md`.
-9. Preserve user notes, reading status, priority, and manually curated tags unless the user explicitly asks to change them.
-10. Regenerate `paper-library/viz.html` with the bundled visualization script.
-11. Cite only sources that were actually used.
+3. Read `paper-library/paper-library.toml` if it exists and follow its paper body profile settings.
+4. Fetch or verify metadata from authoritative sources when network access is available. Prefer arXiv for bibliographic facts; use project pages, GitHub, Hugging Face paper pages, or Semantic Scholar only as additional sources.
+5. Create or update one paper concept under `paper-library/papers/`.
+6. Identify 1 to 3 important themes from the paper's title, abstract, method, benchmarks, and contributions.
+7. Reuse existing topic pages when they cover those themes; otherwise create new `paper-library/topics/<slug>.md` topic summary pages without waiting for an explicit user request.
+8. Add concise topic links under the paper body and add the paper to each affected topic's `# Papers` section.
+9. Update `paper-library/papers/index.md`, `paper-library/topics/index.md`, and every affected `paper-library/topics/*.md`.
+10. Preserve user notes, reading status, priority, body layout, and manually curated tags unless the user explicitly asks to change them.
+11. Regenerate `paper-library/viz.html` with the bundled visualization script.
+12. Cite only sources that were actually used.
 
 ## Paper Documents
 
-Use `references/SPEC.md` as the base OKF format reference and `references/schema.md` as the stricter paper-library profile. Default body sections for papers:
+Use `references/SPEC.md` as the base OKF format reference and `references/schema.md` as the stricter paper-library profile.
 
-* `# Summary`
-* `# Key Ideas`
-* `# Method` when the paper has a concrete method section worth separating
-* `# Experiments` when the paper reports empirical results
-* `# Limitations` when known from the paper or user's notes
-* `# Notes`
-* `# Related`
-* `# Citations`
+Paper bodies are user-customizable Markdown. Do not treat any one summarization template as part of the OKF contract. When `paper-library/paper-library.toml` exists, use `paper_body.default_profile` and the matching `paper_body.profiles.<name>.sections` list for new paper bodies. Treat `paper_body.required_sections` as validation requirements only when the user configures them.
 
-Keep generated summaries concise and distinguish paper claims from personal notes. If a paper has not been read in full, avoid presenting speculative critique as established fact.
+If no config exists, infer the preferred body structure from nearby papers before falling back to a simple research-note layout such as `# Summary`, `# Key Ideas`, `# Notes`, `# Related`, and `# Citations`. Keep generated summaries concise and distinguish paper claims from personal notes. If a paper has not been read in full, avoid presenting speculative critique as established fact. Preserve existing paper body layout when updating a paper unless the user explicitly asks to reorganize it.
 
 ## Topic Documents
 
@@ -82,6 +76,7 @@ Use `status: unread` for newly added papers unless the user says otherwise. Reco
 Before finishing paper-library edits:
 
 * Check that every paper has `type: Paper`, `title`, `description`, `resource`, `arxiv_id`, `pdf_url`, `doi`, `authors`, `submitted`, `tags`, `status`, `priority`, and `timestamp`.
+* Check configured paper body sections only when `paper-library/paper-library.toml` sets `paper_body.required_sections`.
 * Check that internal Markdown links resolve within `paper-library/`.
 * Check that index entries point to existing files.
 * Regenerate the required graph artifact after content edits. The script is a thin wrapper around the OKF reference viewer in `okf/src`:

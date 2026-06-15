@@ -46,7 +46,65 @@ reading_round: 1
 
 ## Paper Body
 
-Default sections:
+Paper body is user-customizable Markdown. The paper-library profile does not
+make any single summarization template part of the OKF contract.
+
+When present, `paper-library/paper-library.toml` controls the preferred paper
+body layout:
+
+```toml
+[paper_body]
+default_profile = "research-note"
+preserve_existing_layout = true
+required_sections = []
+recommended_sections = [
+  "Summary",
+  "Key Ideas",
+  "Notes",
+  "Related",
+  "Citations",
+]
+
+[paper_body.profiles.research-note]
+sections = [
+  "Summary",
+  "Key Ideas",
+  "Method",
+  "Experiments",
+  "Limitations",
+  "Notes",
+  "Related",
+  "Citations",
+]
+
+[paper_body.profiles.implementation]
+sections = [
+  "What To Reproduce",
+  "Algorithm",
+  "Data",
+  "Metrics",
+  "Engineering Notes",
+  "Failure Modes",
+]
+
+[paper_body.profiles.survey-card]
+sections = [
+  "One-line Takeaway",
+  "Research Context",
+  "Method Family",
+  "Compared With",
+  "Useful For",
+  "Open Questions",
+]
+```
+
+Use profile `sections` to create new paper files. Use `required_sections` only
+for validation. `recommended_sections` are guidance, not validation failures.
+Set `required_sections = []` when section layout should remain fully
+personalized.
+
+If no config exists, infer the body layout from existing papers before falling
+back to a simple research-note layout:
 
 ```markdown
 # Summary
@@ -66,7 +124,9 @@ Default sections:
 # Citations
 ```
 
-Omit `# Method`, `# Experiments`, or `# Limitations` if there is no reliable information yet. Preserve `# Notes` exactly when updating a paper unless the user asks to revise it.
+Omit sections that do not fit the paper or the user's chosen profile. Preserve
+existing body layout and user-authored notes when updating a paper unless the
+user asks to reorganize them.
 
 ## Topic Frontmatter
 
@@ -125,6 +185,7 @@ Validate a library with the bundled standard-library script:
 python .agents/skills/paper-library-manager/scripts/validate_paper_library.py paper-library
 ```
 
-The script checks OKF frontmatter, paper and topic required fields, expected
-body sections, internal links, bidirectional paper-topic links, required index
-files, and the required `viz.html` graph artifact.
+The script checks OKF frontmatter, paper and topic required fields, configured
+paper body requirements, topic body sections, internal links, bidirectional
+paper-topic links, required index files, and the required `viz.html` graph
+artifact.
