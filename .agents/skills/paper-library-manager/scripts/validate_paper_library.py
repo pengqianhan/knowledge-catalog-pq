@@ -35,11 +35,6 @@ PAPER_REQUIRED = {
 TOPIC_REQUIRED = {"type", "title", "description", "tags", "timestamp"}
 STATUS_VALUES = {"unread", "skimmed", "read", "summarized"}
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+\.md(?:#[^)]+)?)\)")
-VIZ_DATA_RE = re.compile(
-    r"<script[^>]+id=[\"']paper-library-viz-data[\"'][^>]*>(.*?)</script>",
-    re.DOTALL,
-)
-VIZ_SCHEMA = "paper-library-viz/v1"
 
 
 @dataclass
@@ -144,6 +139,23 @@ def _link_target(root: Path, source: Path, target: str) -> Path:
     return (source.parent / target).resolve()
 
 
+def _extract_okf_bundle_data(text: str) -> dict[str, Any]:
+    marker = "window.BUNDLE"
+    marker_idx = text.find(marker)
+    if marker_idx < 0:
+        raise ValueError("missing OKF viewer data assignment window.BUNDLE")
+    object_start = text.find("{", marker_idx)
+    if object_start < 0:
+        raise ValueError("missing OKF viewer graph object")
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[object_start:])
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid OKF viewer graph JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError("OKF viewer graph data must be an object")
+    return data
+
+
 def _validate_viz(root: Path, expected_concept_ids: set[str]) -> list[str]:
     errors: list[str] = []
     viz_path = root / "viz.html"
@@ -161,28 +173,21 @@ def _validate_viz(root: Path, expected_concept_ids: set[str]) -> list[str]:
     if not text.strip():
         return ["viz.html: file is empty"]
 
-    match = VIZ_DATA_RE.search(text)
-    if not match:
-        return [
-            "viz.html: missing embedded paper-library graph data; run the bundled generate_viz.py script"
-        ]
-
     try:
-        data = json.loads(match.group(1))
-    except json.JSONDecodeError as exc:
-        return [f"viz.html: invalid embedded graph JSON: {exc}"]
-
-    if data.get("schema") != VIZ_SCHEMA:
-        errors.append(f"viz.html: expected schema {VIZ_SCHEMA!r}, got {data.get('schema')!r}")
+        data = _extract_okf_bundle_data(text)
+    except ValueError as exc:
+        return [f"viz.html: {exc}; regenerate with generate_viz.py"]
 
     nodes = data.get("nodes")
     if not isinstance(nodes, list):
-        errors.append("viz.html: graph data field nodes must be a list")
+        errors.append("viz.html: OKF graph field nodes must be a list")
         nodes = []
     node_ids = {
-        str(node.get("id"))
+        str(node.get("data", {}).get("id"))
         for node in nodes
-        if isinstance(node, dict) and node.get("id")
+        if isinstance(node, dict)
+        and isinstance(node.get("data"), dict)
+        and node.get("data", {}).get("id")
     }
     missing_nodes = sorted(expected_concept_ids - node_ids)
     extra_nodes = sorted(node_ids - expected_concept_ids)
@@ -193,16 +198,25 @@ def _validate_viz(root: Path, expected_concept_ids: set[str]) -> list[str]:
 
     edges = data.get("edges")
     if not isinstance(edges, list):
-        errors.append("viz.html: graph data field edges must be a list")
+        errors.append("viz.html: OKF graph field edges must be a list")
         return errors
     for idx, edge in enumerate(edges, start=1):
-        if not isinstance(edge, dict):
-            errors.append(f"viz.html: edge {idx} must be an object")
+        edge_data = edge.get("data") if isinstance(edge, dict) else None
+        if not isinstance(edge_data, dict):
+            errors.append(f"viz.html: edge {idx} must contain an OKF data object")
             continue
-        source = edge.get("source")
-        target = edge.get("target")
+        source = edge_data.get("source")
+        target = edge_data.get("target")
         if source not in node_ids or target not in node_ids:
             errors.append(f"viz.html: edge {idx} references an unknown concept")
+
+    bodies = data.get("bodies")
+    if isinstance(bodies, dict):
+        missing_bodies = sorted(expected_concept_ids - set(map(str, bodies)))
+        if missing_bodies:
+            errors.append(f"viz.html: missing concept bodies: {', '.join(missing_bodies)}")
+    else:
+        errors.append("viz.html: OKF graph field bodies must be an object")
 
     return errors
 

@@ -105,14 +105,17 @@ Create topic files proactively for important new themes when adding papers. Keep
 the canonical filename; do not create `vis.html` unless a user explicitly asks
 for an additional alias.
 
-Generate the visualization after paper, topic, or index edits:
+Generate the visualization after paper, topic, or index edits. The bundled
+script is a paper-library wrapper around the OKF reference viewer in `okf/src`;
+it is not a separate viewer implementation.
 
 ```bash
 python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-library
 ```
 
-The generated file must embed graph data for every paper and topic concept so
-the validator can detect stale or missing visualizations.
+The generated file must include OKF viewer `window.BUNDLE` graph data for every
+paper and topic concept so the validator can detect stale or missing
+visualizations.
 
 ## Validation
 

@@ -7,7 +7,7 @@ description: Manage an OKF paper library under `paper-library/` in the current r
 
 ## Overview
 
-Maintain an OKF paper library as Markdown files with YAML frontmatter. Keep paper content in `paper-library/`; keep `paper-library/viz.html` as the required generated graph; keep this skill limited to workflow rules, schema guidance, validation expectations, and standalone helper scripts.
+Maintain an OKF paper library as Markdown files with YAML frontmatter. Keep paper content in `paper-library/`; keep `paper-library/viz.html` as the required generated graph. Treat `okf/` as the source of truth for general OKF behavior; keep this skill limited to paper-library workflow rules, schema guidance, validation expectations, and thin wrappers around OKF tooling.
 
 ## Scope
 
@@ -86,7 +86,7 @@ Before finishing paper-library edits:
 * Check that every paper has `type: Paper`, `title`, `description`, `resource`, `arxiv_id`, `pdf_url`, `doi`, `authors`, `submitted`, `tags`, `status`, `priority`, and `timestamp`.
 * Check that internal Markdown links resolve within `paper-library/`.
 * Check that index entries point to existing files.
-* Regenerate the required graph artifact after content edits:
+* Regenerate the required graph artifact after content edits. The script is a thin wrapper around the OKF reference viewer in `okf/src`:
 
 ```bash
 python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-library
@@ -104,13 +104,13 @@ If your environment provides a Codex skill validator, run it against this skill 
 
 `paper-library/viz.html` is required. Use `viz.html` as the canonical filename; treat `vis.html` as a typo unless the user explicitly asks for a separate alias.
 
-Generate the graph view with the bundled dependency-free script:
+Generate the graph view with the bundled wrapper, which calls `enrichment_agent.viewer.generate_visualization` from the OKF reference implementation:
 
 ```bash
 python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-library
 ```
 
-The script embeds the current paper/topic graph into the HTML so it works from a static checkout or `file://` URL. If a target repository also has another OKF-compatible viewer, use it only when the user asks; the final bundle must still pass the bundled validator.
+Run the command from a repository that contains `okf/src`, or pass `--okf-src` / set `OKF_SRC` when the OKF source lives elsewhere. Do not hand-roll a separate paper-library viewer unless the user explicitly asks for an experimental alternative. The final bundle must pass the bundled validator.
 
 ## Comparison Tasks
 
