@@ -19,6 +19,7 @@ from typing import Any
 
 RESERVED_NAMES = {"index.md", "log.md"}
 CONFIG_NAME = "paper-library.toml"
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / "assets" / CONFIG_NAME
 PAPER_REQUIRED = {
     "type",
     "title",
@@ -150,62 +151,65 @@ def _heading(section: str) -> str:
     return section if section.startswith("#") else f"# {section}"
 
 
-def _load_config(root: Path) -> tuple[LibraryConfig, list[str]]:
-    config_path = root / CONFIG_NAME
+def _load_config(config_path: Path) -> tuple[LibraryConfig, list[str]]:
+    config_path = config_path.expanduser().resolve()
+    config_label = config_path.as_posix()
     if not config_path.exists():
-        return LibraryConfig(paper_required_sections=[]), []
+        return LibraryConfig(paper_required_sections=[]), [
+            f"{config_label}: missing paper-library config"
+        ]
     if not config_path.is_file():
-        return LibraryConfig(paper_required_sections=[]), [f"{CONFIG_NAME}: expected a file"]
+        return LibraryConfig(paper_required_sections=[]), [f"{config_label}: expected a file"]
 
     try:
         data = tomllib.loads(config_path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
-        return LibraryConfig(paper_required_sections=[]), [f"{CONFIG_NAME}: invalid TOML: {exc}"]
+        return LibraryConfig(paper_required_sections=[]), [f"{config_label}: invalid TOML: {exc}"]
 
     errors: list[str] = []
     paper_body = data.get("paper_body", {})
     if not isinstance(paper_body, dict):
         return LibraryConfig(paper_required_sections=[]), [
-            f"{CONFIG_NAME}: paper_body must be a table"
+            f"{config_label}: paper_body must be a table"
         ]
 
     required_sections = paper_body.get("required_sections", [])
     if not _string_list(required_sections):
-        errors.append(f"{CONFIG_NAME}: paper_body.required_sections must be a string list")
+        errors.append(f"{config_label}: paper_body.required_sections must be a string list")
         required_sections = []
 
     recommended_sections = paper_body.get("recommended_sections", [])
     if "recommended_sections" in paper_body and not _string_list(recommended_sections):
-        errors.append(f"{CONFIG_NAME}: paper_body.recommended_sections must be a string list")
+        errors.append(f"{config_label}: paper_body.recommended_sections must be a string list")
 
     preserve_existing = paper_body.get("preserve_existing_layout", True)
     if not isinstance(preserve_existing, bool):
-        errors.append(f"{CONFIG_NAME}: paper_body.preserve_existing_layout must be a boolean")
+        errors.append(f"{config_label}: paper_body.preserve_existing_layout must be a boolean")
 
     profiles = paper_body.get("profiles", {})
     if "profiles" in paper_body and not isinstance(profiles, dict):
-        errors.append(f"{CONFIG_NAME}: paper_body.profiles must be a table")
+        errors.append(f"{config_label}: paper_body.profiles must be a table")
         profiles = {}
 
     default_profile = paper_body.get("default_profile")
     if default_profile is not None:
         if not isinstance(default_profile, str) or not default_profile.strip():
-            errors.append(f"{CONFIG_NAME}: paper_body.default_profile must be a string")
+            errors.append(f"{config_label}: paper_body.default_profile must be a string")
         elif default_profile not in profiles:
             errors.append(
-                f"{CONFIG_NAME}: paper_body.default_profile {default_profile!r} "
+                f"{config_label}: paper_body.default_profile {default_profile!r} "
                 "is not defined under paper_body.profiles"
             )
 
     if isinstance(profiles, dict):
         for profile_name, profile in sorted(profiles.items()):
             if not isinstance(profile, dict):
-                errors.append(f"{CONFIG_NAME}: profile {profile_name!r} must be a table")
+                errors.append(f"{config_label}: profile {profile_name!r} must be a table")
                 continue
             sections = profile.get("sections", [])
             if not _string_list(sections):
                 errors.append(
-                    f"{CONFIG_NAME}: profile {profile_name!r} sections must be a string list"
+                    f"{config_label}: profile {profile_name!r} sections must be a string list"
                 )
 
     return LibraryConfig(paper_required_sections=list(required_sections)), errors
@@ -300,8 +304,9 @@ def _validate_viz(root: Path, expected_concept_ids: set[str]) -> list[str]:
     return errors
 
 
-def validate(root: Path) -> list[str]:
+def validate(root: Path, config_path: Path | None = None) -> list[str]:
     root = root.resolve()
+    config_path = config_path or DEFAULT_CONFIG_PATH
     errors: list[str] = []
     if not root.exists():
         return [f"{root}: library root does not exist"]
@@ -310,7 +315,7 @@ def validate(root: Path) -> list[str]:
 
     docs, load_errors = load_documents(root)
     errors.extend(load_errors)
-    config, config_errors = _load_config(root)
+    config, config_errors = _load_config(config_path)
     errors.extend(config_errors)
 
     by_rel_no_suffix = {doc.rel.with_suffix("").as_posix(): doc for doc in docs}
@@ -408,9 +413,18 @@ def main() -> int:
         default="paper-library",
         help="Path to the paper library root (default: paper-library).",
     )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help=(
+            "Path to paper-library.toml. Defaults to the skill asset at "
+            ".agents/skills/paper-library-manager/assets/paper-library.toml."
+        ),
+    )
     args = parser.parse_args()
 
-    errors = validate(Path(args.library_root))
+    errors = validate(Path(args.library_root), args.config)
     if errors:
         print("paper-library validation failed:")
         for error in errors:

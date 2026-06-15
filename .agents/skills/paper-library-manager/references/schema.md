@@ -49,8 +49,10 @@ reading_round: 1
 Paper body is user-customizable Markdown. The paper-library profile does not
 make any single summarization template part of the OKF contract.
 
-When present, `paper-library/paper-library.toml` controls the preferred paper
-body layout:
+The default paper body profile lives at
+[`../assets/paper-library.toml`](../assets/paper-library.toml), relative to
+this reference file. That asset controls the preferred paper body layout for
+this repo-local paper-library manager:
 
 ```toml
 [paper_body]
@@ -101,10 +103,12 @@ sections = [
 Use profile `sections` to create new paper files. Use `required_sections` only
 for validation. `recommended_sections` are guidance, not validation failures.
 Set `required_sections = []` when section layout should remain fully
-personalized.
+personalized. For a one-off paper style, derive a temporary profile from the
+asset config and persist it only when the user asks.
 
-If no config exists, infer the body layout from existing papers before falling
-back to a simple research-note layout:
+If the asset config is unavailable during manual drafting, infer the body
+layout from existing papers before falling back to a simple research-note
+layout:
 
 ```markdown
 # Summary
@@ -184,6 +188,11 @@ Validate a library with the bundled standard-library script:
 ```bash
 python .agents/skills/paper-library-manager/scripts/validate_paper_library.py paper-library
 ```
+
+The validator reads
+`.agents/skills/paper-library-manager/assets/paper-library.toml` by default.
+Pass `--config <path/to/paper-library.toml>` only for a temporary validation
+profile or another repo layout.
 
 The script checks OKF frontmatter, paper and topic required fields, configured
 paper body requirements, topic body sections, internal links, bidirectional

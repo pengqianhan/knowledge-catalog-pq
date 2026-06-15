@@ -19,7 +19,7 @@ When adding or updating a paper:
 
 1. Parse the arXiv ID from the URL or user input.
 2. Read the existing paper file if `paper-library/papers/<arxiv_id>.md` already exists.
-3. Read `paper-library/paper-library.toml` if it exists and follow its paper body profile settings.
+3. Read `.agents/skills/paper-library-manager/assets/paper-library.toml` and follow its paper body profile settings.
 4. Fetch or verify metadata from authoritative sources when network access is available. Prefer arXiv for bibliographic facts; use project pages, GitHub, Hugging Face paper pages, or Semantic Scholar only as additional sources.
 5. Create or update one paper concept under `paper-library/papers/`.
 6. Identify 1 to 3 important themes from the paper's title, abstract, method, benchmarks, and contributions.
@@ -34,9 +34,9 @@ When adding or updating a paper:
 
 Use `references/SPEC.md` as the base OKF format reference and `references/schema.md` as the stricter paper-library profile.
 
-Paper bodies are user-customizable Markdown. Do not treat any one summarization template as part of the OKF contract. When `paper-library/paper-library.toml` exists, use `paper_body.default_profile` and the matching `paper_body.profiles.<name>.sections` list for new paper bodies. Treat `paper_body.required_sections` as validation requirements only when the user configures them.
+Paper bodies are user-customizable Markdown. Do not treat any one summarization template as part of the OKF contract. Use `.agents/skills/paper-library-manager/assets/paper-library.toml` as the default paper body configuration for this repo-local library manager. Use `paper_body.default_profile` and the matching `paper_body.profiles.<name>.sections` list for new paper bodies. Treat `paper_body.required_sections` as validation requirements only when the user configures them.
 
-If no config exists, infer the preferred body structure from nearby papers before falling back to a simple research-note layout such as `# Summary`, `# Key Ideas`, `# Notes`, `# Related`, and `# Citations`. Keep generated summaries concise and distinguish paper claims from personal notes. If a paper has not been read in full, avoid presenting speculative critique as established fact. Preserve existing paper body layout when updating a paper unless the user explicitly asks to reorganize it.
+If a specific paper needs a different summarization style, derive a temporary profile or template from the asset config for that paper, and persist the new profile only when the user asks. Keep generated summaries concise and distinguish paper claims from personal notes. If a paper has not been read in full, avoid presenting speculative critique as established fact. Preserve existing paper body layout when updating a paper unless the user explicitly asks to reorganize it.
 
 ## Topic Documents
 
@@ -76,7 +76,7 @@ Use `status: unread` for newly added papers unless the user says otherwise. Reco
 Before finishing paper-library edits:
 
 * Check that every paper has `type: Paper`, `title`, `description`, `resource`, `arxiv_id`, `pdf_url`, `doi`, `authors`, `submitted`, `tags`, `status`, `priority`, and `timestamp`.
-* Check configured paper body sections only when `paper-library/paper-library.toml` sets `paper_body.required_sections`.
+* Check configured paper body sections only when `.agents/skills/paper-library-manager/assets/paper-library.toml` sets `paper_body.required_sections`.
 * Check that internal Markdown links resolve within `paper-library/`.
 * Check that index entries point to existing files.
 * Regenerate the required graph artifact after content edits. The script is a thin wrapper around the OKF reference viewer in `okf/src`:
@@ -90,6 +90,8 @@ python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-librar
 ```bash
 python .agents/skills/paper-library-manager/scripts/validate_paper_library.py paper-library
 ```
+
+Use `--config <path/to/paper-library.toml>` only for a temporary validation profile or another repo layout.
 
 If your environment provides a Codex skill validator, run it against this skill folder after editing the skill itself.
 
