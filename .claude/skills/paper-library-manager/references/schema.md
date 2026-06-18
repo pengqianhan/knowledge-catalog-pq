@@ -49,62 +49,27 @@ reading_round: 1
 Paper body is user-customizable Markdown. The paper-library profile does not
 make any single summarization template part of the OKF contract.
 
-The default paper body profile lives at
-[`../assets/paper-library.toml`](../assets/paper-library.toml), relative to
-this reference file. That asset controls the preferred paper body layout for
-this repo-local paper-library manager:
+The default paper body profile is defined entirely in
+[`../assets/paper-library.toml`](../assets/paper-library.toml) (relative to this
+reference file). **That asset is the single source of truth for paper body
+layout.** This document explains how its keys are used but deliberately does not
+restate their values, so the asset and this reference cannot drift apart — read
+the asset to get the current profile names and section lists.
 
-```toml
-[paper_body]
-default_profile = "research-note"
-preserve_existing_layout = true
-required_sections = []
-recommended_sections = [
-  "Summary",
-  "Key Ideas",
-  "Notes",
-  "Related",
-  "Citations",
-]
+The `[paper_body]` table defines:
 
-[paper_body.profiles.research-note]
-sections = [
-  "Summary",
-  "Key Ideas",
-  "Method",
-  "Experiments",
-  "Limitations",
-  "Notes",
-  "Related",
-  "Citations",
-]
+- `default_profile` — the profile used for new paper bodies. Must name a profile
+  defined under `[paper_body.profiles.*]`.
+- `preserve_existing_layout` — whether to keep an existing paper's section layout
+  when updating it.
+- `required_sections` — sections the validator enforces. Empty means the layout
+  is fully personalized and nothing is enforced.
+- `recommended_sections` — guidance only; never a validation failure.
 
-[paper_body.profiles.implementation]
-sections = [
-  "What To Reproduce",
-  "Algorithm",
-  "Data",
-  "Metrics",
-  "Engineering Notes",
-  "Failure Modes",
-]
-
-[paper_body.profiles.survey-card]
-sections = [
-  "One-line Takeaway",
-  "Research Context",
-  "Method Family",
-  "Compared With",
-  "Useful For",
-  "Open Questions",
-]
-```
-
-Use profile `sections` to create new paper files. Use `required_sections` only
-for validation. `recommended_sections` are guidance, not validation failures.
-Set `required_sections = []` when section layout should remain fully
-personalized. For a one-off paper style, derive a temporary profile from the
-asset config and persist it only when the user asks.
+Each `[paper_body.profiles.<name>]` table defines a `sections` list. Use the
+`default_profile`'s `sections` to create new paper files, or another profile's
+`sections` when it fits the paper better. For a one-off paper style, derive a
+temporary profile from the asset config and persist it only when the user asks.
 
 If the asset config is unavailable during manual drafting, infer the body
 layout from existing papers before falling back to a simple research-note
