@@ -48,22 +48,23 @@ timestamp: <ISO 8601 datetime>
    - For repeatable project workflows, keep templates and instances semantically distinct. A useful generic pattern is `projects-folder/templates/<TemplateName>/` for reusable templates and `projects-folder/<ProjectName>/` for instantiated projects.
 
 4. Validate.
-   - Before running bundled scripts, set `SKILL_DIR` to this skill's installed directory, meaning the directory that contains this `SKILL.md`. Do not assume the skill lives under `.agents/skills`, `.codex/skills`, or `.claude/skills`.
+   - Run bundled scripts from this skill's root directory, using paths relative to the directory that contains this `SKILL.md`. Pass the bundle root as an absolute path when the target repo is not the current working directory.
+   - Run the bundled validator on every OKF bundle root you changed. Prefer `uv run` so the script can install its declared Python dependency from the inline PEP 723 metadata:
 
 ```bash
-SKILL_DIR=/absolute/path/to/okf-repo-organizer
+uv run scripts/validate_okf_bundle.py /absolute/path/to/bundle-root
 ```
 
-   - Run the bundled validator on every OKF bundle root you changed:
+   - If `uv` is unavailable and the environment already has Python 3.11+ plus PyYAML, run it directly:
 
 ```bash
-python "$SKILL_DIR/scripts/validate_okf_bundle.py" <bundle-root>
+python scripts/validate_okf_bundle.py /absolute/path/to/bundle-root
 ```
 
    - If an OKF reference implementation is available and you want to reuse its parser, pass it explicitly. This is optional; the validator also works with PyYAML when the reference implementation is unavailable.
 
 ```bash
-python "$SKILL_DIR/scripts/validate_okf_bundle.py" <bundle-root> --okf-src /path/to/okf/src
+uv run scripts/validate_okf_bundle.py /absolute/path/to/bundle-root --okf-src /path/to/okf/src
 ```
 
    - The validator reuses `enrichment_agent.bundle.document.OKFDocument.parse` from `okf/src` when available, then applies the generic conformance rules from this skill's bundled `references/SPEC.md`. It does not call the stricter enrichment-agent document validator because that validator requires recommended fields that generic OKF does not require.
