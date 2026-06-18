@@ -17,6 +17,7 @@ This topic tracks papers about LLM agents that execute tasks, build reusable ski
 
 * [OpenSkill](../papers/2606.06741.md) - open-world self-evolution through skills and self-built verification anchors.
 * [Decentralized Multi-Agent Systems with Shared Context](../papers/2606.10662.md) - multi-agent test-time scaling through shared verified context.
+* [EurekAgent](../papers/2606.13662.md) - shapes agent behavior through engineered environments rather than prescribed workflows.
 
 # Open Questions
 

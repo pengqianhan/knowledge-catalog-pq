@@ -16,6 +16,11 @@ This topic tracks papers about AI systems used to plan, run, and revise scientif
 # Papers
 
 * [AutoScientists](../papers/2605.28655.md) - self-organizing agent teams for long-running computational scientific experimentation.
+* [EurekAgent](../papers/2606.13662.md) - environment-engineered agent system for metric-driven autonomous scientific discovery.
+
+# Synthesis
+
+* AutoScientists and EurekAgent both target autonomous discovery but locate the leverage differently: AutoScientists in self-organizing team structure, EurekAgent in the environment (permissions, artifacts, budget, oversight) the agents act within.
 
 # Open Questions
 
