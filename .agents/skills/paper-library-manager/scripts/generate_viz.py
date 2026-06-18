@@ -4,8 +4,14 @@
 # ///
 """Generate the required paper-library viz.html artifact.
 
-This script is intentionally self-contained so the skill can run after being
-installed in Codex, Claude Code, or another Agent Skills-compatible client.
+This mirrors the OKF reference viewer (``enrichment_agent.viewer.generator``):
+the same Cytoscape graph + detail-pane layout is produced by injecting the
+bundled ``templates/viz.html``, ``static/viz.css``, and ``static/viz.js`` so the
+paper-library ``viz.html`` stays format-consistent with okf bundle viewers.
+
+The frontmatter parsing is kept self-contained so the skill can run after being
+installed in Codex, Claude Code, or another Agent Skills-compatible client
+without importing the okf package.
 """
 
 from __future__ import annotations
@@ -26,6 +32,12 @@ TYPE_PALETTE = {
     "Reference": "#9333ea",
 }
 DEFAULT_NODE_COLOR = "#64748b"
+
+# Injection markers used by templates/viz.html (kept identical to the okf viewer).
+_CSS_MARKER = "/*__VIZ_CSS__*/"
+_JS_MARKER = "/*__VIZ_JS__*/"
+_NAME_MARKER = "__BUNDLE_NAME__"
+_DATA_MARKER = "__BUNDLE_DATA__"
 
 
 @dataclass
@@ -206,103 +218,23 @@ def _build_graph(concepts: list[Concept]) -> dict[str, Any]:
     }
 
 
+def _load_template() -> str:
+    return (Path(__file__).parent / "templates" / "viz.html").read_text(encoding="utf-8")
+
+
+def _load_asset(name: str) -> str:
+    return (Path(__file__).parent / "static" / name).read_text(encoding="utf-8")
+
+
 def _render_html(bundle_name: str, graph: dict[str, Any]) -> str:
-    template = """<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>__BUNDLE_NAME_TEXT__</title>
-  <style>
-    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { margin: 0; background: Canvas; color: CanvasText; }
-    header { padding: 24px 28px 16px; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); }
-    h1 { margin: 0 0 8px; font-size: 24px; line-height: 1.2; }
-    .summary { margin: 0; color: color-mix(in srgb, CanvasText 70%, transparent); }
-    main { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; min-height: calc(100vh - 89px); }
-    aside { border-right: 1px solid color-mix(in srgb, CanvasText 14%, transparent); padding: 18px; overflow: auto; }
-    section { padding: 18px 24px; overflow: auto; }
-    input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 6px; background: Canvas; color: CanvasText; }
-    .node { display: block; width: 100%; text-align: left; margin: 10px 0 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, CanvasText 14%, transparent); border-left: 5px solid var(--node-color); border-radius: 6px; background: color-mix(in srgb, Canvas 94%, CanvasText 6%); color: CanvasText; cursor: pointer; }
-    .node strong { display: block; font-size: 14px; }
-    .node span { display: block; margin-top: 4px; font-size: 12px; color: color-mix(in srgb, CanvasText 68%, transparent); }
-    .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
-    .pill { border: 1px solid color-mix(in srgb, CanvasText 16%, transparent); border-radius: 999px; padding: 4px 8px; font-size: 12px; color: color-mix(in srgb, CanvasText 70%, transparent); }
-    pre { white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid color-mix(in srgb, CanvasText 14%, transparent); border-radius: 6px; padding: 14px; background: color-mix(in srgb, Canvas 93%, CanvasText 7%); }
-    @media (max-width: 760px) { main { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); } }
-  </style>
-</head>
-<body>
-  <header>
-    <h1 id="bundle-name"></h1>
-    <p class="summary" id="summary"></p>
-  </header>
-  <main>
-    <aside>
-      <input id="search" type="search" placeholder="Filter papers and topics">
-      <div id="nodes"></div>
-    </aside>
-    <section>
-      <div class="meta" id="meta"></div>
-      <h2 id="title"></h2>
-      <p id="description"></p>
-      <pre id="body"></pre>
-    </section>
-  </main>
-  <script>
-    window.BUNDLE = __BUNDLE_DATA__;
-    window.BUNDLE_NAME = __BUNDLE_NAME_JSON__;
-    const bundle = window.BUNDLE;
-    const nodesEl = document.getElementById("nodes");
-    const searchEl = document.getElementById("search");
-    const titleEl = document.getElementById("title");
-    const descEl = document.getElementById("description");
-    const bodyEl = document.getElementById("body");
-    const metaEl = document.getElementById("meta");
-    document.getElementById("bundle-name").textContent = window.BUNDLE_NAME;
-    document.getElementById("summary").textContent = `${bundle.nodes.length} concepts, ${bundle.edges.length} links`;
-
-    function showNode(node) {
-      const data = node.data;
-      titleEl.textContent = data.label || data.id;
-      descEl.textContent = data.description || "";
-      bodyEl.textContent = bundle.bodies[data.id] || "";
-      metaEl.innerHTML = "";
-      [data.type, data.resource, ...(data.tags || [])].filter(Boolean).forEach(value => {
-        const pill = document.createElement("span");
-        pill.className = "pill";
-        pill.textContent = value;
-        metaEl.appendChild(pill);
-      });
-    }
-
-    function render() {
-      const query = searchEl.value.toLowerCase();
-      nodesEl.innerHTML = "";
-      bundle.nodes
-        .filter(node => JSON.stringify(node.data).toLowerCase().includes(query))
-        .sort((a, b) => (a.data.label || a.data.id).localeCompare(b.data.label || b.data.id))
-        .forEach(node => {
-          const button = document.createElement("button");
-          button.className = "node";
-          button.style.setProperty("--node-color", node.data.color || "#64748b");
-          button.innerHTML = `<strong>${node.data.label || node.data.id}</strong><span>${node.data.type || "Concept"} · ${node.data.id}</span>`;
-          button.addEventListener("click", () => showNode(node));
-          nodesEl.appendChild(button);
-        });
-    }
-
-    searchEl.addEventListener("input", render);
-    render();
-    if (bundle.nodes[0]) showNode(bundle.nodes[0]);
-  </script>
-</body>
-</html>
-"""
+    template = _load_template()
+    css = _load_asset("viz.css")
+    js = _load_asset("viz.js")
     return (
-        template.replace("__BUNDLE_NAME_TEXT__", bundle_name)
-        .replace("__BUNDLE_NAME_JSON__", json.dumps(bundle_name, ensure_ascii=False))
-        .replace("__BUNDLE_DATA__", json.dumps(graph, ensure_ascii=False))
+        template.replace(_CSS_MARKER, css)
+        .replace(_JS_MARKER, js)
+        .replace(_NAME_MARKER, json.dumps(bundle_name, ensure_ascii=False))
+        .replace(_DATA_MARKER, json.dumps(graph, ensure_ascii=False))
     )
 
 
