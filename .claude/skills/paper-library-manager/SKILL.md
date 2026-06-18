@@ -112,6 +112,8 @@ Generate the graph view with the bundled self-contained script:
 uv run scripts/generate_viz.py /absolute/path/to/paper-library
 ```
 
+`scripts/generate_viz.py` renders the same Cytoscape graph + detail-pane viewer as the OKF reference (`enrichment_agent.viewer`) by injecting `scripts/templates/viz.html`, `scripts/static/viz.css`, and `scripts/static/viz.js`. Keep those sibling asset files alongside the script so the generated `viz.html` stays format-consistent with okf bundle viewers; only the bundle name and graph data differ.
+
 The final bundle must pass the bundled validator. This skill carries its own schema references and visualization script.
 
 ## Comparison Tasks
