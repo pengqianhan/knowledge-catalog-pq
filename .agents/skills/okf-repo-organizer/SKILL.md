@@ -48,16 +48,22 @@ timestamp: <ISO 8601 datetime>
    - For repeatable project workflows, keep templates and instances semantically distinct. A useful generic pattern is `projects-folder/templates/<TemplateName>/` for reusable templates and `projects-folder/<ProjectName>/` for instantiated projects.
 
 4. Validate.
+   - Before running bundled scripts, set `SKILL_DIR` to this skill's installed directory, meaning the directory that contains this `SKILL.md`. Do not assume the skill lives under `.agents/skills`, `.codex/skills`, or `.claude/skills`.
+
+```bash
+SKILL_DIR=/absolute/path/to/okf-repo-organizer
+```
+
    - Run the bundled validator on every OKF bundle root you changed:
 
 ```bash
-python .agents/skills/okf-repo-organizer/scripts/validate_okf_bundle.py <bundle-root>
+python "$SKILL_DIR/scripts/validate_okf_bundle.py" <bundle-root>
 ```
 
-   - If the OKF reference implementation lives outside the current repo, pass it explicitly:
+   - If an OKF reference implementation is available and you want to reuse its parser, pass it explicitly. This is optional; the validator also works with PyYAML when the reference implementation is unavailable.
 
 ```bash
-python .agents/skills/okf-repo-organizer/scripts/validate_okf_bundle.py <bundle-root> --okf-src /path/to/okf/src
+python "$SKILL_DIR/scripts/validate_okf_bundle.py" <bundle-root> --okf-src /path/to/okf/src
 ```
 
    - The validator reuses `enrichment_agent.bundle.document.OKFDocument.parse` from `okf/src` when available, then applies the generic conformance rules from this skill's bundled `references/SPEC.md`. It does not call the stricter enrichment-agent document validator because that validator requires recommended fields that generic OKF does not require.
