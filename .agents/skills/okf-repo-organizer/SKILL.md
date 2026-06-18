@@ -1,0 +1,68 @@
+---
+name: okf-repo-organizer
+description: Organize a repository, folder, or knowledge corpus into generic Open Knowledge Format (OKF) bundles. Use when you are asked to convert or normalize repo files and folders to OKF, add OKF index/log/concept frontmatter, choose bundle boundaries, migrate idea/project/doc folders into OKF-style structure, or validate generic OKF conformance.
+---
+
+# OKF Repo Organizer
+
+## Overview
+
+Use this skill to make an existing repo or folder easier for humans and agents to traverse as OKF. Keep the skill generic: OKF is markdown plus YAML frontmatter, not a domain-specific taxonomy.
+
+## Reference
+
+Read `references/SPEC.md` from this skill before changing files. Treat it as the only OKF format reference. Do not assume the target repository contains an `okf/` directory or its own copy of the spec.
+
+Do not invent stricter required fields than the spec. For generic OKF conformance, every non-reserved `.md` concept document needs parseable YAML frontmatter with a non-empty `type`. `title`, `description`, `resource`, `tags`, and `timestamp` are recommended, not mandatory.
+
+## Workflow
+
+1. Establish scope and bundle boundaries.
+   - Use the path the user names. If none is named, inspect the repo and choose the smallest sensible scope.
+   - Prefer treating knowledge-oriented folders as OKF bundles. Do not force a whole software repo to be one OKF bundle unless the user asks for that or the repo is already markdown-first.
+   - A nested folder can be its own bundle when it has independent context, for example an `Ideas/idea_example/` folder with its own `index.md`, `log.md`, and concept files.
+
+2. Inventory before editing.
+   - Use `rg --files` to inspect Markdown, source, asset, generated, and vendor paths.
+   - Preserve user content and existing frontmatter keys. Move or rename files only when it improves OKF traversal and does not break obvious project conventions.
+   - Ignore generated and dependency folders such as `.git/`, `node_modules/`, `.venv/`, `dist/`, and `build/` unless the user explicitly wants them modeled.
+
+3. Organize the bundle.
+   - Add or update `index.md` at the bundle root and important subdirectories for progressive disclosure. Keep index files as plain Markdown; only a bundle-root `index.md` may use frontmatter, and only for `okf_version`.
+   - Add or update `log.md` when the folder needs chronological history. Use `## YYYY-MM-DD` date headings, newest first.
+   - For each non-reserved `.md` concept file, add or normalize frontmatter:
+
+```markdown
+---
+type: <self-explanatory type>
+title: <human-readable title>
+description: <one-sentence summary>
+tags: [optional, tags]
+timestamp: <ISO 8601 datetime>
+---
+```
+
+   - Keep `type` short and descriptive, such as `Idea`, `Project`, `Template`, `Reference`, `Runbook`, `Dataset`, `Note`, or `Decision`. Do not create a central type registry.
+   - Leave code, data, images, PDFs, and other non-Markdown assets in normal project locations. When useful, create a concept `.md` that describes or links to the asset instead of modifying the asset.
+   - Prefer bundle-relative Markdown links that begin with `/` when links should survive file moves. Relative links are fine for local neighbors.
+   - For repeatable project workflows, keep templates and instances semantically distinct. A useful generic pattern is `projects-folder/templates/<TemplateName>/` for reusable templates and `projects-folder/<ProjectName>/` for instantiated projects.
+
+4. Validate.
+   - Run the bundled validator on every OKF bundle root you changed:
+
+```bash
+python .agents/skills/okf-repo-organizer/scripts/validate_okf_bundle.py <bundle-root>
+```
+
+   - If the OKF reference implementation lives outside the current repo, pass it explicitly:
+
+```bash
+python .agents/skills/okf-repo-organizer/scripts/validate_okf_bundle.py <bundle-root> --okf-src /path/to/okf/src
+```
+
+   - The validator reuses `enrichment_agent.bundle.document.OKFDocument.parse` from `okf/src` when available, then applies the generic conformance rules from this skill's bundled `references/SPEC.md`. It does not call the stricter enrichment-agent document validator because that validator requires recommended fields that generic OKF does not require.
+
+5. Finish with a concise report.
+   - List the bundle root(s), important files changed, and validator result.
+   - If validation fails, fix the OKF format issues before finishing unless the user explicitly asks you to stop.
+   - Call out deliberate non-OKF areas, such as source-only directories or a top-level README kept outside the selected bundle.
