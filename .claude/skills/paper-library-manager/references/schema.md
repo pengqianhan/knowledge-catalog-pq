@@ -7,7 +7,7 @@ file as the stricter paper-library profile layered on top of OKF.
 
 If this file is silent on a format question, follow [SPEC.md](SPEC.md). If this
 file is stricter than [SPEC.md](SPEC.md), follow this file for `paper-library/`
-content so Codex can maintain papers and topics consistently.
+content so agents can maintain papers and topics consistently.
 
 ## Paper Frontmatter
 
@@ -169,12 +169,12 @@ Create topic files proactively for important new themes when adding papers. Keep
 the canonical filename; do not create `vis.html` unless a user explicitly asks
 for an additional alias.
 
-Generate the visualization after paper, topic, or index edits. The bundled
-script is a paper-library wrapper around the OKF reference viewer in `okf/src`;
-it is not a separate viewer implementation.
+Generate the visualization after paper, topic, or index edits. Run bundled
+scripts from the skill root, using paths relative to the directory that
+contains `SKILL.md`.
 
 ```bash
-python .agents/skills/paper-library-manager/scripts/generate_viz.py paper-library
+uv run scripts/generate_viz.py /absolute/path/to/paper-library
 ```
 
 The generated file must include OKF viewer `window.BUNDLE` graph data for every
@@ -186,13 +186,18 @@ visualizations.
 Validate a library with the bundled standard-library script:
 
 ```bash
-python .agents/skills/paper-library-manager/scripts/validate_paper_library.py paper-library
+uv run scripts/validate_paper_library.py /absolute/path/to/paper-library
 ```
 
-The validator reads
-`.agents/skills/paper-library-manager/assets/paper-library.toml` by default.
-Pass `--config <path/to/paper-library.toml>` only for a temporary validation
-profile or another repo layout.
+The validator reads `assets/paper-library.toml` from the installed skill by
+default. Pass `--config <path/to/paper-library.toml>` only for a temporary
+validation profile or another repo layout. If `uv` is unavailable and the
+environment already has Python 3.11+, run the scripts directly with `python`:
+
+```bash
+python scripts/generate_viz.py /absolute/path/to/paper-library
+python scripts/validate_paper_library.py /absolute/path/to/paper-library
+```
 
 The script checks OKF frontmatter, paper and topic required fields, configured
 paper body requirements, topic body sections, internal links, bidirectional
