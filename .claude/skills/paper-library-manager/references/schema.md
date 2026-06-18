@@ -128,6 +128,16 @@ Use topic files to connect papers and track open questions. Do not duplicate ful
 
 Create topic files proactively for important new themes when adding papers. Keep topic slugs lowercase and hyphenated, for example `agent-self-evolution.md` or `long-context-reasoning.md`.
 
+## Links
+
+Use **relative** Markdown links between concepts (for example `../topics/foo.md`
+or a sibling `2606.13662.md`), not the bundle-root-absolute form recommended by
+[SPEC.md](SPEC.md) §5.1. This is intentional: the bundle is distributed as a
+subdirectory of a larger repository, where GitHub and common editors resolve
+`/`-rooted links against the repo root rather than the bundle root, which would
+break navigation. Relative links keep clicks working on GitHub, in editors, and
+when the folder is copied elsewhere. Do not rewrite them to absolute paths.
+
 ## Required Bundle Outputs
 
 `paper-library/viz.html` is a required generated artifact. Use `viz.html` as
